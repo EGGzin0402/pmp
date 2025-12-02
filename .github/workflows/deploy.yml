@@ -16,7 +16,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'amazoncorretto'
+          distribution: 'corretto'
           java-version: '25'
 
       - name: Cache Maven
