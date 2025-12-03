@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,7 +40,7 @@ public class PessoaController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<PessoaResponseDto>> getAll(Pageable pageable){
+    public ResponseEntity<Page<PessoaResponseDto>> getAll(@PageableDefault(size = 10) Pageable pageable){
         List<Pessoa> p = service.listAll();
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), p.size());
