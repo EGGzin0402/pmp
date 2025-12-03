@@ -1,0 +1,34 @@
+services:
+#  mongodb:
+#    image: mongo:latest
+#    hostname: mongodb
+#    container_name: mongodb
+#    restart: unless-stopped
+#    ports:
+#      - "27017:27017"
+  mysql:
+    image: mysql:latest
+    hostname: mysql
+    container_name: mysql-pmplogin
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: pmp
+    ports:
+      - "3306:3306"
+  pmp-login:
+    image: pmp-login:latest
+    hostname: pmp-login
+    container_name: pmp-login
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8081
+      APPLICATION_NAME: pmp-login
+      LOCALE_RESOLVER: fixed
+      LOCALE: pt_BR
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pmp?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
