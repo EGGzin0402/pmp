@@ -1,0 +1,164 @@
+services:
+  mysql:
+    image: mysql:latest
+    hostname: mysql
+    container_name: mysql-pmp
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: pmp
+    ports:
+      - "3306:3306"
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki-pmp
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail-pmp
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log
+      - ./promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-pmp
+    ports:
+      - "3000:3000"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+
+  pmp-gateway:
+    image: pmp-gateway:latest
+    hostname: pmp-gateway
+    container_name: pmp-gateway
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      APPLICATION_NAME: pmp-gateway
+      LOGIN_SERVICE_URI: http://pmp-login:8081
+      PESSOA_SERVICE_URI: http://pmp:8082
+      JWT_SECRET_KEY: e2998d41e327e8af4a5c2dfd0d961f2a8a21bec5c67d1f4cf8afee5e37707f60
+    depends_on:
+      - pmp-login
+      - pmp
+  pmp-login:
+    image: pmp-login:latest
+    hostname: pmp-login
+    container_name: pmp-login
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_REPLICAS: 1
+      KAFKA_PARTITIONS: 1
+      SERVER_PORT: 8081
+      APPLICATION_NAME: pmp-login
+      LOCALE_RESOLVER: fixed
+      LOCALE: pt_BR
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pmp?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET_KEY: e2998d41e327e8af4a5c2dfd0d961f2a8a21bec5c67d1f4cf8afee5e37707f60
+    depends_on:
+      - mysql
+  pmp:
+    image: pmp:latest
+    hostname: pmp
+    container_name: pmp
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8082
+      APPLICATION_NAME: pmp
+      LOCALE_RESOLVER: fixed
+      LOCALE: pt_BR
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pmp?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+    depends_on:
+      - mysql
+  pmp-lambda:
+    image: pmp-lambda:latest
+    hostname: pmp-lambda
+    container_name: pmp-lambda
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_REPLICAS: 1
+      KAFKA_PARTITIONS: 1
+      KAFKA_TOPIC: forget
+      KAFKA_CONSUMER_GROUP: pmp
+    depends_on:
+      - kafka
+  pmp-consumer1:
+    image: pmp-consumer:latest
+    hostname: pmp-consumer1
+    container_name: pmp-consumer1
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+    environment:
+      APPLICATION_NAME: pmp-consumer1
+      SERVER_PORT: 8084
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_REPLICAS: 1
+      KAFKA_PARTITIONS: 1
+      KAFKA_TOPIC: forget
+      KAFKA_CONSUMER_GROUP: pmp-consumer
+    depends_on:
+      - kafka
+  pmp-consumer2:
+    image: pmp-consumer:latest
+    hostname: pmp-consumer2
+    container_name: pmp-consumer2
+    ports:
+      - "8085:8085"
+    restart: unless-stopped
+    environment:
+      APPLICATION_NAME: pmp-consumer2
+      SERVER_PORT: 8084
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_REPLICAS: 1
+      KAFKA_PARTITIONS: 1
+      KAFKA_TOPIC: forget
+      KAFKA_CONSUMER_GROUP: pmp-consumer
+    depends_on:
+      - kafka

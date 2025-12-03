@@ -1,0 +1,5 @@
+com\fatec\GatewayApplication.class
+com\fatec\config\RouteConfig.class
+com\fatec\config\JwtDecoderConfig.class
+com\fatec\config\GatewayCorsConfig.class
+com\fatec\config\CorsProperties.class
