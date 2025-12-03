@@ -16,8 +16,7 @@ public class RouteConfig {
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(
                                 "/v1/auth/**",
-                                "/v1/users/**",
-                                "/v1/pessoas/**")
+                                "/v1/users/**")
                         .permitAll()
 //                        .pathMatchers("/v1/users/save/**")
 //                        .hasRole("ADMIN")
